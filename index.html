@@ -136,10 +136,11 @@ details[open]>summary .chev{transform:rotate(90deg)}
 @media (hover:hover) and (pointer:fine){.gc-link:hover{background-size:100% 1px}}
 .gc-link svg{width:14px;height:14px;transition:transform 150ms var(--ease)}
 @media (hover:hover) and (pointer:fine){.gc-link:hover svg{transform:translate(3px,-1px)}}
-.dtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:8px;margin:2px 0 14px}
+.dtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,122px),1fr));gap:8px;margin:2px 0 14px}
 .dtiles .tile{background:var(--surface);border:1px solid var(--line)}
 .dtiles .tile b{font-size:21px}
-.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));gap:10px}
+.chart{min-width:0}
 .chart{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px}
 .chart h4{margin:0 0 4px;font-size:12px;font-weight:600;color:var(--muted)}
 .chart .cv{position:relative;height:150px}
@@ -160,14 +161,26 @@ footer{padding:10px 0 50px;color:var(--muted);font-size:12.5px}
 @media (max-width:520px){
   .wrap{padding:0 16px}
   .block{padding:16px 14px}
-  details.act>summary{grid-template-columns:4px 1.2fr 1fr 1fr 18px;gap:10px}
+  details.act>summary{grid-template-columns:4px 1.5fr .9fr 1.2fr 16px;gap:8px;padding:10px 10px 10px 10px}
+  .a-name{white-space:nowrap}
+  .a-cell small{white-space:nowrap;font-size:11px}
   details.act>summary .hide-xs{display:none}
   .mc-nav{width:100%;flex-wrap:nowrap}
   .sel-wrap{flex:1;min-width:0}
   .mc-nav>.btn{flex:none}
   select.btn{flex:1;min-width:0;width:100%}
   .stat b{font-size:24px}
+  .detail{padding:2px 10px 14px}
+  .dtiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .dtiles .tile{padding:7px 8px}
+  .dtiles .tile span{font-size:10.5px;line-height:1.25;overflow-wrap:anywhere}
+  .dtiles .tile b{font-size:17px}
+  .dtiles .tile b small{font-size:10.5px;margin-left:2px}
+  .chart{padding:8px 8px 6px}
+  .chart .cv,.chart svg{height:140px}
+  th,td{padding:6px 8px}
 }
+@media (max-width:330px){.dtiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -325,7 +338,7 @@ function select(n,user,scroll){
         <div class="a-name">${sp.label}<small>${a.start.slice(11)}</small></div>
         <div class="a-cell mono">${hms(a.dur)}<small>tiempo</small></div>
         <div class="a-cell hide-xs">${dist??'<span class="nodata">sin dato</span>'}<small>distancia</small></div>
-        <div class="a-cell hide-sm">${paceTxt(a)??"—"}<small>${sp.pace?"ritmo":"velocidad"}</small></div>
+        <div class="a-cell hide-sm">${paceTxt(a)??"—"}<small>${isRow(a.k)&&a.spd>0?nf(a.spd*3.6,1)+" km/h":sp.pace?"ritmo":"velocidad"}</small></div>
         <div class="a-cell">${a.hr??"—"} / ${a.hrmax??"—"}<small>FC med / máx</small></div>
         <div class="a-cell hide-sm">${a.load!=null?Math.round(a.load):"—"}<small>carga</small></div>
         ${chev}</summary><div class="detail"></div></details>`}).join("")}</div></div>`}).join("")||'<p class="hint">Sin sesiones esta semana.</p>';
@@ -346,6 +359,7 @@ async function openAct(el){
   <div class="dtiles">${[
     tile("Tiempo",hms(a.dur)),
     tile("Distancia",a.dist>0?(row?nf(Math.round(a.dist)):nf(a.dist/1000,2)):null,row?"m":"km"),
+    row?tile("Velocidad media",a.spd>0?nf(a.spd*3.6,1):null,"km/h"):"",row?tile("Velocidad máx.",a.spdmax>0?nf(a.spdmax*3.6,1):null,"km/h"):"",
     tile(sp.pace?"Ritmo medio":"Velocidad media",a.spd>0?(sp.pace?hms(sp.pace/a.spd):nf(a.spd*3.6,1)):null,pu),
     tile(sp.pace?"Mejor ritmo":"Velocidad máx.",a.spdmax>0&&a.k!=="other"?(sp.pace?hms(sp.pace/a.spdmax):nf(a.spdmax*3.6,1)):null,pu),
     tile("FC media",a.hr,"ppm"),tile("FC máxima",a.hrmax,"ppm"),
@@ -363,7 +377,7 @@ async function openAct(el){
   d.querySelector(".loading").remove();
   const s=det.series||{},T=s.t||[],xl=T.map(x=>hms(x)),list=[];
   if(s.hr)list.push({k:"hr",t:"Frecuencia cardiaca (ppm)",d:s.hr,c:"--s-erg"});
-  if(s.spd){if(sp.pace){const lim=a.k==="run"?1.2:.8;list.push({k:"pace",t:`Ritmo (${pu})`,d:s.spd.map(v=>v>lim?sp.pace/v:null),c:sp.c,pace:true})}
+  if(s.spd){if(sp.pace){const lim=a.k==="run"?1.2:.8;list.push({k:"pace",t:row?`Ritmo (${pu}) · velocidad (km/h)`:`Ritmo (${pu})`,d:s.spd.map(v=>v>lim?sp.pace/v:null),c:sp.c,pace:true})}
     else list.push({k:"spd",t:"Velocidad (km/h)",d:s.spd.map(v=>v==null?null:+(v*3.6).toFixed(1)),c:sp.c})}
   if(s.cad)list.push({k:"cad",t:`${row?"Ritmo de palada":"Cadencia"} (${cadU(a)})`,d:s.cad.map(v=>v||null),c:"--accent"});
   if(s.pwr)list.push({k:"pwr",t:"Potencia (W)",d:s.pwr,c:"--s-bike"});
@@ -375,9 +389,17 @@ async function openAct(el){
     ${det.laps&&det.laps.length?lapsHTML(a,det.laps):""}`);
   if(!window.Chart)return;
   list.forEach(c=>{const col=css(c.c),o=baseOpts();
-    if(c.pace){o.scales.y.reverse=true;o.scales.y.ticks.callback=v=>hms(v);o.plugins.tooltip.callbacks={label:i=>i.raw==null?"":hms(i.raw)}}
+    if(matchMedia("(max-width:520px)").matches)o.scales.x.ticks.maxTicksLimit=5;
+    if(c.pace||c.k==="spd"||c.k==="cad"){const r=rango(c.d,c.pace?[5,10,15,20,30,60,120,300,600]:c.k==="cad"?[1,2,5,10,20,50]:[.5,1,2,2.5,5,10,20]);if(r){o.scales.y.min=r.lo;o.scales.y.max=r.hi;o.scales.y.ticks.stepSize=r.step;
+      // remo: a la derecha, los mismos puntos del eje en km/h
+      if(c.pace&&row)o.scales.y2={position:"right",reverse:true,min:r.lo,max:r.hi,grid:{display:false},ticks:{stepSize:r.step,color:css(c.c),font:{size:10},callback:v=>v>0?nf(sp.pace/v*3.6,1):""}}}}
+    if(c.pace){o.scales.y.reverse=true;o.scales.y.ticks.callback=v=>hms(v);o.plugins.tooltip.callbacks={label:i=>i.raw==null?"":hms(i.raw)+(row?" · "+nf(sp.pace/i.raw*3.6,1)+" km/h":"")}}
     new Chart(d.querySelector(`canvas[data-k="${c.k}"]`),{type:"line",data:{labels:xl,datasets:[{data:c.d,borderColor:col,backgroundColor:col+"30",fill:c.fill?"start":false,borderWidth:1.6,pointRadius:0,tension:.25,spanGaps:true}]},options:o})});
 }
+// Eje con saltos redondos y sin que un pico suelto aplaste la línea (ignora el 5 % más extremo de cada lado)
+function rango(d,pasos){const v=d.filter(x=>x!=null&&isFinite(x)).sort((a,b)=>a-b);if(v.length<10)return null;
+  let a=v[Math.floor(v.length*.05)],b=v[Math.ceil(v.length*.95)-1];const m=Math.max((b-a)*.25,pasos[0]);a-=m;b+=m;
+  const step=pasos.find(p=>(b-a)/p<=5)||pasos.at(-1);return{lo:Math.max(0,Math.floor(a/step)*step),hi:Math.ceil(b/step)*step,step}}
 function routeSVG(tr,col){
   const la=tr.map(p=>p[0]),lo=tr.map(p=>p[1]),k=Math.cos((Math.min(...la)+Math.max(...la))/2*Math.PI/180),xs=lo.map(v=>v*k);
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...la),y1=Math.max(...la),W=300,H=150,p=10;
@@ -387,8 +409,8 @@ function routeSVG(tr,col){
 }
 function lapsHTML(a,laps){
   const sp=SPORTS[a.k],row=isRow(a.k),hp=laps.some(l=>l.pwr),ha=laps.some(l=>l.asc);
-  return `<div class="laps"><h4>Vueltas</h4><table><thead><tr><th>Vuelta</th><th>Tiempo</th><th>Distancia</th><th>${sp.pace?"Ritmo":"Velocidad"}</th><th>FC med</th><th>FC máx</th><th>${row?"Pal/min":"Cadencia"}</th>${hp?"<th>Potencia</th>":""}${ha?"<th>Desnivel +</th>":""}<th>kcal</th></tr></thead><tbody>
-  ${laps.map((l,i)=>`<tr><td>${i+1}</td><td class="mono">${hms(l.t)}</td><td>${l.d>0?(row?nf(Math.round(l.d))+" m":nf(l.d/1000,2)+" km"):"—"}</td><td>${l.spd>0?(sp.pace?hms(sp.pace/l.spd):nf(l.spd*3.6,1)):"—"}</td><td>${l.hr??"—"}</td><td>${l.hrmax??"—"}</td><td>${l.cad||"—"}</td>${hp?`<td>${l.pwr??"—"}</td>`:""}${ha?`<td>${l.asc??"—"}</td>`:""}<td>${l.kcal??"—"}</td></tr>`).join("")}</tbody></table></div>`;
+  return `<div class="laps"><h4>Vueltas</h4><table><thead><tr><th>Vuelta</th><th>Tiempo</th><th>Distancia</th>${row?"<th>km/h</th>":""}<th>${sp.pace?"Ritmo":"Velocidad"}</th><th>FC med</th><th>FC máx</th><th>${row?"Pal/min":"Cadencia"}</th>${hp?"<th>Potencia</th>":""}${ha?"<th>Desnivel +</th>":""}<th>kcal</th></tr></thead><tbody>
+  ${laps.map((l,i)=>`<tr><td>${i+1}</td><td class="mono">${hms(l.t)}</td><td>${l.d>0?(row?nf(Math.round(l.d))+" m":nf(l.d/1000,2)+" km"):"—"}</td>${row?`<td>${l.spd>0?nf(l.spd*3.6,1):"—"}</td>`:""}<td>${l.spd>0?(sp.pace?hms(sp.pace/l.spd):nf(l.spd*3.6,1)):"—"}</td><td>${l.hr??"—"}</td><td>${l.hrmax??"—"}</td><td>${l.cad||"—"}</td>${hp?`<td>${l.pwr??"—"}</td>`:""}${ha?`<td>${l.asc??"—"}</td>`:""}<td>${l.kcal??"—"}</td></tr>`).join("")}</tbody></table></div>`;
 }
 </script>
 </body>
